@@ -1,0 +1,146 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Get_blob_content_using_path_(V2)": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/GetFileContentByPath",
+                    "queries": {
+                        "inferContentType": true,
+                        "path": "@triggerBody()?['Path']",
+                        "queryParametersSingleEncoded": true
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Get_tables_(V2)": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sql_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('contosoltd.database.windows.net'))},@{encodeURIComponent(encodeURIComponent('DB-Toll-Booth'))}/tables"
+                },
+                "runAfter": {
+                    "Optical_Character_Recognition_(OCR)_to_Text": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Insert_row_(V2)": {
+                "inputs": {
+                    "body": {
+                        "dateTimelp": "@{utcNow()}",
+                        "licensePlateText": "@body('Optical_Character_Recognition_(OCR)_to_Text')?['text']",
+                        "tollBoothId": "@rand(1,1000)"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['sql_1']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('contosoltd.database.windows.net'))},@{encodeURIComponent(encodeURIComponent('DB-Toll-Booth'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[licensePlates]'))}/items"
+                },
+                "runAfter": {
+                    "Get_tables_(V2)": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "Optical_Character_Recognition_(OCR)_to_Text": {
+                "inputs": {
+                    "body": "@body('Get_blob_content_using_path_(V2)')",
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['cognitiveservicescomputervision']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/vision/v2.0/ocrtext",
+                    "queries": {
+                        "detectOrientation": true,
+                        "format": "Image Content",
+                        "language": "unk"
+                    }
+                },
+                "runAfter": {
+                    "Get_blob_content_using_path_(V2)": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "When_a_blob_is_added_or_modified_(properties_only)_(V2)": {
+                "evaluatedRecurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azureblob']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('AccountNameFromSettings'))}/triggers/batch/onupdatedfile",
+                    "queries": {
+                        "checkBothCreatedAndModifiedDateTime": false,
+                        "folderId": "JTJmbGljZW5zZS1wbGF0ZS1pbWFnZXM="
+                    }
+                },
+                "metadata": {
+                    "JTJmbGljZW5zZS1wbGF0ZS1pbWFnZXM=": "/license-plate-images"
+                },
+                "recurrence": {
+                    "frequency": "Minute",
+                    "interval": 3
+                },
+                "splitOn": "@triggerBody()",
+                "type": "ApiConnection"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "azureblob": {
+                    "connectionId": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/resourceGroups/GGR_Hackathon/providers/Microsoft.Web/connections/azureblob-1",
+                    "connectionName": "azureblob-1",
+                    "id": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/providers/Microsoft.Web/locations/eastus/managedApis/azureblob"
+                },
+                "cognitiveservicescomputervision": {
+                    "connectionId": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/resourceGroups/GGR_Hackathon/providers/Microsoft.Web/connections/cognitiveservicescomputervision-1",
+                    "connectionName": "cognitiveservicescomputervision-1",
+                    "id": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/providers/Microsoft.Web/locations/eastus/managedApis/cognitiveservicescomputervision"
+                },
+                "sql_1": {
+                    "connectionId": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/resourceGroups/GGR_Hackathon/providers/Microsoft.Web/connections/sql-3",
+                    "connectionName": "sql-3",
+                    "id": "/subscriptions/e9698aad-d401-41a6-9249-78e771a1d033/providers/Microsoft.Web/locations/eastus/managedApis/sql"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,17 @@
+SQL commands used 
+
+To create database :
+
+create table license-plates
+(
+	tollBoothId INT PRIMARY KEY, 
+	dateTimelp NVARCHAR(128) NOT NULL,
+	licensePlateText NVARCHAR(128) NOT NULL,
+)
+
+
+To check the records in database:
+
+SELECT * FROM [dbo].[licensePlates]
+
+SELECT * FROM [dbo].[licensePlates] ORDER BY dateTimelp desc  
